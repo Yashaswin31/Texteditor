@@ -1,11 +1,12 @@
+Editor fixed · PY
 import os
-
+ 
 class Node:
     def __init__(self, val):
         self.val = val
         self.next = None
         self.prev = None
-
+ 
 class Line:
     def __init__(self):
         self.root = Node("Root Node")
@@ -23,7 +24,7 @@ class Line:
         self.cursor = self.cursor.next
         self.cursor_posn += 1
         self.char_total += 1
-
+ 
     def delete_char(self):
         if self.cursor != self.root:
             if self.cursor.next is not None:
@@ -42,7 +43,7 @@ class Line:
         if self.cursor != self.root:
             self.cursor = self.cursor.prev
             self.cursor_posn -= 1
-
+ 
     def setCursor(self, val):
         self.cursor = self.root
         self.cursor_posn = 0
@@ -52,7 +53,7 @@ class Line:
                 self.cursor_posn += 1
             elif self.cursor.next is None:
                 break
-
+ 
     def __str__(self):
         temp_node = self.root.next
         char = []
@@ -64,7 +65,7 @@ class Line:
                 char.append("|")
             temp_node = temp_node.next
         return  "".join(char)
-
+ 
     def print_without_cursor(self):
         temp_node = self.root.next
         char =[]
@@ -72,7 +73,7 @@ class Line:
             char.append(temp_node.val)
             temp_node = temp_node.next
         return "".join(char)
-
+ 
 class Page:
     def __init__(self):
         self.rootline = Node(Line())
@@ -101,7 +102,8 @@ class Page:
         self.current_line = self.current_line.next
         self.current_line.val.setCursor(0)
         self.line_total += 1
-
+        self.target = 0
+ 
     def setCursor(self, line, posn):
         if line <= self.line_total:
             cur_line = self.rootline
@@ -110,7 +112,7 @@ class Page:
             self.current_line = cur_line
             cur_line.val.setCursor(posn)
             self.target = cur_line.val.cursor_posn
-
+ 
     def move_up(self):
         if self.current_line != self.firstline:
             self.current_line = self.current_line.prev
@@ -143,7 +145,7 @@ class Page:
                 if self.current_line.next is None:
                     self.current_line = self.firstline
                     self.current_line.val.setCursor(0)
-
+ 
     def line_index(self):
         i = 0                                     
         node = self.rootline
@@ -162,18 +164,19 @@ class Page:
                 while self.current_line.val.cursor.next is not None :
                     self.current_line.val.cursor = self.current_line.val.cursor.next
                     self.current_line.val.cursor_posn += 1
-                    self.target = self.current_line.val.cursor_posn
+                self.target = self.current_line.val.cursor_posn
             else:
                 if self.current_line == self.firstline:
                     while self.current_line.next is not None:
                         self.current_line = self.current_line.next
                     while self.current_line.val.cursor.next is not None:
                         self.current_line.val.move_right()
+                    self.target = self.current_line.val.cursor_posn
             
     def add(self, val):
         self.current_line.val.add_char(val)
         self.target = self.current_line.val.cursor_posn
-
+ 
     def delete(self):
         if self.current_line.val.cursor != self.current_line.val.root:
             self.current_line.val.delete_char()
@@ -195,7 +198,7 @@ class Page:
                 self.current_line.val.setCursor(cursor_posn)
                 self.line_total -= 1
         self.target = self.current_line.val.cursor_posn
-
+ 
     def get_lines(self):
         lines = []
         node = self.firstline
@@ -222,7 +225,7 @@ class Page:
         self.target = 0
         self.line_total = len(lines or [""])
  
-
+ 
     def __str__(self):
         lines = []
         tempLine = self.firstline
@@ -234,7 +237,7 @@ class Page:
                 lines.append(str(tempLine.val.print_without_cursor()))
                 tempLine = tempLine.next
         return "\n".join(lines)
-
+ 
     def find(self, target_str):
         found = False
         if target_str != "":
@@ -253,7 +256,7 @@ class Page:
         elif target_str == "":
             print("Not a valid sting")
             return
-
+ 
     def find_and_replace_all(self, target_str, replace):
         if target_str != "":
             current = self.firstline
@@ -269,25 +272,31 @@ class Page:
         elif target_str == "":
                     print("Not a valid string")
                     return
-
+ 
     def find_and_replace_next(self, target_str, replace):
         if target_str != "":
             current = self.current_line
+            current_cursor_posn = current.val.cursor_posn
             while current is not None:
                 current_line_text = current.val.print_without_cursor()
-                if target_str in current_line_text:
-                    new_text = current_line_text.replace(target_str, replace, 1)
+                current_line_text_1 = current_line_text[:current_cursor_posn]
+                current_line_text_2 = current_line_text[current_cursor_posn:]
+                if target_str in current_line_text_2:
+                    new_text = current_line_text_2.replace(target_str, replace, 1)
                     current.val = Line()
+                    for ch in current_line_text_1:
+                        current.val.add_char(ch)
                     for ch in new_text:
                         current.val.add_char(ch)
                     self.current_line = current
                     self.target = current.val.cursor_posn
                     return
                 current = current.next
+                current_cursor_posn = 0          # later lines are searched from their start
         elif target_str == "":
                     print("Not a valid string")
                     return  
-
+ 
     def save_to_file(self, filename):
         """Traverses lines directly and saves text to file."""
         lines = []
@@ -302,7 +311,7 @@ class Page:
             f.write(full_text)
             
         print(f"File saved successfully to {filename}")
-
+ 
 class HistNode:
     def __init__(self, val, operation, line_no, posn):
         self.val = val
@@ -311,19 +320,19 @@ class HistNode:
         self.posn = posn
         self.next = None
         self.prev = None
-
+ 
 class ActionStack:
     def __init__(self):
         self.head = HistNode(0, 0, 0, 0)
         self.ptr = self.head
         self.len = 0
-
+ 
     def push(self, node):
         self.ptr.next = node
         node.prev = self.ptr
         self.ptr = self.ptr.next
         self.len += 1
-
+ 
     def pop(self):
         node = self.ptr
         if self.len == 0:
@@ -335,12 +344,12 @@ class ActionStack:
             node.next = None
             self.len -= 1
         return node
-
+ 
     def clear(self):
         self.ptr = self.head
         self.head.next = None
         self.len = 0
-
+ 
     def _len(self):
         return self.len
     
@@ -348,7 +357,7 @@ class History:
     def __init__(self):
         self.redo_stack = ActionStack()
         self.undo_stack = ActionStack()
-
+ 
     def record(self, val, opr, line_no, posn):
         self.undo_stack.push(HistNode(val, opr, line_no, posn))
         self.redo_stack.clear()
@@ -359,61 +368,61 @@ class History:
             self.redo_stack.push(node)
             self.rev_action(node, page)
             return True
-
+ 
     def redo(self, page):
         node = self.redo_stack.pop()
         if node is not None:
             self.undo_stack.push(node)
             self.action(node, page)
             return True
-
+ 
     def action(self, node: HistNode, page: Page):
         if node.opr == "insert":
             page.setCursor(node.line_no, node.posn)
             for val in node.val:
                 page.add(val)
-
+ 
         elif node.opr == "delete":
             page.setCursor(node.line_no, node.posn)
             page.delete()
-
+ 
         elif node.opr == "break line":
             page.setCursor(node.line_no, node.posn)
             page.break_line()
-
+ 
         elif node.opr == "merge":
             page.setCursor(node.line_no, 0)
             page.delete()
-
+ 
         elif node.opr == "replace":
             page.load_lines(node.val[1])
             page.setCursor(node.line_no, node.posn)
-
+ 
     def rev_action(self, node: HistNode, page: Page):
         if node.opr == "insert":
             page.setCursor(node.line_no, node.posn + len(node.val))
             for i in range(len(node.val)):
                 page.delete()
-
+ 
         elif node.opr == "delete":
             page.setCursor(node.line_no, node.posn - 1)
             page.add(node.val)
-
+ 
         elif node.opr == "break line":
             page.setCursor(node.line_no + 1, 0)
             page.delete()
-
+ 
         elif node.opr == "merge":
             page.setCursor(node.line_no - 1, node.val)
             page.break_line()
-
+ 
         elif node.opr == "replace":
             page.load_lines(node.val[0])
             page.setCursor(node.line_no, node.posn)
         
-
+ 
             
-
+ 
 def clear_screen():
     print("\033[H\033[J", end="")
  
@@ -472,13 +481,13 @@ def main():
                 history.record(prev_len, "merge", line_no, 0)
             # first line, column 0: nothing changes, nothing is recorded
         elif user_input == "{":
-            target = str(input())
+            target = str(input("Please enter the string to be found: "))
             clear_screen()
             page.find(target)
             input("Press enter to return to editor")
         elif user_input == "}":
-            target = str(input())
-            replace = str(input())
+            target = str(input("Please enter the string to be found: "))
+            replace = str(input("Please enter what the string should be replaced with: "))
             line_no = page.line_index()
             posn = page.current_line.val.cursor_posn
             before = page.get_lines()                         # snapshot of the text before
@@ -490,8 +499,8 @@ def main():
             print(page)
             input("Press enter to return to editor")
         elif user_input == "&":
-            target = str(input())
-            replace = str(input())
+            target = str(input("Please enter the string to be found: "))
+            replace = str(input("Please enter what the string should be replaced with: "))
             line_no = page.line_index()
             posn = page.current_line.val.cursor_posn
             before = page.get_lines()
@@ -510,7 +519,11 @@ def main():
                 message = "Nothing to redo"
         elif user_input == "save":
             file_name = str(input("Enter file name"))
-            page.save_to_file(file_name)
+            try:
+                page.save_to_file(file_name)
+                message = f"Saved to {file_name}"
+            except OSError as e:
+                message = f"Could not save: {e}"
         elif user_input != "":
             line_no = page.line_index()                       # position BEFORE typing
             posn = page.current_line.val.cursor_posn
@@ -521,4 +534,3 @@ def main():
  
 if __name__ == "__main__":
     main()
- 
